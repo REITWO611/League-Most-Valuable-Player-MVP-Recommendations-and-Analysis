@@ -1,0 +1,270 @@
+## Rachel Li (SHU-YING, LI) 2023.09.29 ALY6000 Introduction of Analytics
+p_load(testthat) #testthat::test_file("project2_tests.R")
+
+cat("\014") # clears console
+rm(list = ls()) # clears global environment try(dev.off(dev.list()["RStudioGD"]), silent = TRUE) # clears plots try(p_unload(p_loaded(), character.only = TRUE), silent = TRUE) # clears packages
+options(scipen = 100) # disables scientific notion for entire R session
+
+library(pacman)
+p_load(tidyverse)
+
+##### Assignment Part 1 #####
+
+# 1. 2015.csv file is in my working directory and test if we've loaded it correctly.
+data_2015 <- read.csv("2015.csv")
+head(data_2015)
+
+# 2. Use the function names to produce the column names for your data set.
+names(data_2015)
+
+# 3. Use the view function to view the data set in a separate tab.
+View(data_2015)
+
+# 4. Use the glimpse function to view your data set in another configuration.
+glimpse(data_2015)
+
+# 5. Use p_load to install the janitor package. Janitor has a function called clean_names that can be given a data frame to make the names more R friendly. Be sure to store the resulting converted data frame in a variable.
+# Install the janitor package using p_load
+p_load(janitor)
+
+# Use clean_data_2015 to clean the column names
+cleaned_data_2015 <- clean_names(data_2015)
+cleaned_data_2015
+
+# 6. Select from the data set the country, region, happiness_score, and freedom columns. Store this new table as happy_df.
+library(dplyr)
+happy_df <- select(cleaned_data_2015, country, region, happiness_score, freedom) 
+
+# 7. Slice the first 10 rows from happy_df and store it as top_ten_df.
+top_ten_df <- slice(happy_df, 1:10)
+
+# 8. From happy_df filter the table for freedom values under 0.20. Store this new table as no_freedom_df.
+no_freedom_df <- filter(happy_df, freedom < 0.20)
+
+# 9. Arrange the values in happy_df in descending order by their freedom values. Store this new table as best_freedom_df.
+best_freedom_df <- arrange(happy_df, desc(freedom))
+
+# 10. Create a new column with mutate in data_2015 called gff_stat. For each row, the gff_stat is the sum of the family, freedom, and generosity values. Store the resulting table right in the data_2015 variable.
+data_2015 <- mutate(data_2015, gff_stat = Family + Freedom + Generosity)
+
+# 11. Summarize the happy_df data set. Your summary should contain the mean happiness_score in a column called mean_happiness, the max happiness_score in a column called max_happiness, the mean freedom in a column called mean_freedom, and the max freedom in a column called max_freedom. Store the resulting table as happy_summary.
+# na.rm="remove missing" 
+happy_summary <- summarize(happy_df,
+                           mean_happiness = mean(happiness_score, na.rm = TRUE),
+                           max_happiness = max(happiness_score, na.rm = TRUE),
+                           mean_freedom = mean(freedom, na.rm = TRUE),
+                           max_freedom = max(freedom, na.rm = TRUE))
+
+# 12. Group the happy_df data set by region. Run a summary that provides the number of countries in each region in a column called country_count, the mean happiness for each region in a column called mean_happiness, and the mean freedom of each region in a column called mean_freedom. Store your resulting table in a variable called regional_stats_df.
+grouped_data <- group_by(happy_df, region)
+grouped_data
+
+regional_stats_df <- summarize(
+  grouped_data, country_count = n(),
+  mean_happiness = mean(happiness_score, na.rm = TRUE),
+  mean_freedom = mean(freedom, na.rm = TRUE))
+regional_stats_df
+
+## 13. [Challenge Problem] Compare the average gdp per capita of the ten least happy Western European countries with the ten happiest Sub-Saharan African countries. For testing, you can store the resulting data.frame or table as gdp_df.
+
+# 从数据集中选择包含所需信息的列
+selected_columns <- c("Country", "Region", "Happiness.Score", "Economy..GDP.per.Capita.")
+
+# 筛选出十个最不幸福的西欧国家
+unhappy_western_european <- head(arrange(filter(data_2015, Region == "Western Europe"), Happiness.Score), 10)
+
+# 将gdp_per_capita列转换为数值
+unhappy_western_european[["Economy..GDP.per.Capita."]] <- as.numeric(unhappy_western_european[["Economy..GDP.per.Capita."]])
+
+# 计算平均值，排除缺失值
+mean_gdp_unhappy_western_european <- mean(unhappy_western_european[["Economy..GDP.per.Capita."]], na.rm = TRUE)
+
+
+# 筛选出十个最幸福的撒哈拉以南非洲国家
+happy_sub_saharan_african <- head(arrange(filter(data_2015, Region == "Sub-Saharan Africa"), desc(Happiness.Score)), 10)
+
+# 将gdp_per_capita列转换为数值
+happy_sub_saharan_african[["Economy..GDP.per.Capita."]] <- as.numeric(happy_sub_saharan_african[["Economy..GDP.per.Capita."]])
+
+# 计算平均值，排除缺失值
+mean_gdp_happy_sub_saharan_african <- mean(happy_sub_saharan_african[["Economy..GDP.per.Capita."]], na.rm = TRUE)
+
+# 计算这些国家的人均 GDP 的平均值
+gdp_df <- data.frame(
+  Region = c("Unhappy Western European", "Happy Sub-Saharan African"),
+  Mean_GDP = c(mean_gdp_unhappy_western_european, mean_gdp_happy_sub_saharan_african))
+
+# 打印结果
+print(gdp_df)
+
+
+## 14. [Challenge problem] From your regional_stats_df, create a scatterplot of mean_happiness vs. mean_freedom. Draw a line segment from the smallest of these values to the largest.
+library(ggplot2)
+
+scatterplot <- ggplot(regional_stats_df, aes(x = mean_freedom, y = mean_happiness, color = region)) +
+  geom_point() +  # 添加散點
+  geom_text(aes(label = region), hjust = 0, vjust = 0) +  # 添加標籤，調整標籤位置
+  geom_segment(aes(x = min(mean_freedom), xend = max(mean_freedom), y = min(mean_happiness), yend = max(mean_happiness)), color = "red", linetype = "dashed") +  # 繪製線段
+  labs(x = "Mean Freedom", y = "Mean Happiness") +  # 添加標籤
+  ggtitle("Scatterplot of Mean Happiness vs. Mean Freedom") +  # 添加標題
+  theme_light()  # 使用亮色主題，背景為淺色
+
+# 顯示散點圖
+print(scatterplot)
+
+
+
+
+##### Assignment Part 2 #####
+
+# 1. Download the baseball.csv data set. data set that represents batting statistics from the 1986 Major League Baseball season. Read this data set in a variable called baseball.
+# 2. Spend time with the data using various exploration functions to get a general feel for what you are working with. For more information on this data set and its various columns, see Baseball Reference’s 1986 Major League Standard Batting.
+# 3. Use the class function to discover the type of class represented in the baseball data set.
+#使用read.csv函數讀取了名為"/Users/rachel/Desktop/Project2-Exploratory Data Analysis (EDA) of Two Data Sets/baseball.csv"的資料集，並將它儲存在名為baseball的變數中。
+baseball <- read.csv("/Users/rachel/Desktop/Project2-Exploratory Data Analysis (EDA) of Two Data Sets/baseball.csv")
+#使用head函數顯示了baseball資料集的前幾列，以便我們可以初步瀏覽數據的外觀。
+head(baseball)
+#使用summary函數生成了對baseball資料集的摘要統計信息，這包括了每個數值欄位的統計摘要。
+summary(baseball)
+#使用str函數顯示了baseball資料集的結構，包括了每個變數的類型和前幾列的值。
+str(baseball)
+#使用dim函數獲得了baseball資料集的維度，即行數和列數。
+dim(baseball)
+#最後，我們使用class函數確定baseball資料集的類別類型，以確保我們知道它的數據類型。
+class(baseball)
+
+# 4. For each age, compute the following: the number of people at that age, the average number of home runs (HRs), the average number of hits, and the average number of runs scored. Store these computations in a variable called age_stats_df.
+
+# 将年龄列转换为数值类型
+baseball$Age <- as.numeric(baseball$Age)
+
+# 創建一個空的數據框age_stats_df來存儲結果
+age_stats_df <- data.frame(Age = numeric(0), Count = integer(0), HR = numeric(0), H = numeric(0), R = numeric(0))
+
+# 遍历每个年龄
+for (age in unique(baseball$Age)) {
+  # 選擇特定年齡的數據
+  age_data <- subset(baseball, Age == age)
+  
+  # 檢查是否有符合條件的數據
+  if (nrow(age_data) > 0) {
+    # 計算該年齡的人數、平均HRs、平均hits和平均runs
+    num_people <- nrow(age_data)
+    avg_hr <- mean(age_data$HR, na.rm = TRUE)
+    avg_hits <- mean(age_data$H, na.rm = TRUE)
+    avg_runs <- mean(age_data$R, na.rm = TRUE)
+    
+    # 創建包含統計信息的新行
+    new_row <- data.frame(Age = age, Count = num_people, HR = avg_hr, H = avg_hits, R = avg_runs)
+    
+    # 將新行添加到age_stats_df中
+    age_stats_df <- rbind(age_stats_df, new_row)
+  }
+}
+age_stats_df
+
+# 5. Remove (filter) from baseball any player with 0 at bats (AB). Store the result in baseball.
+baseball <- baseball %>%
+  filter(AB != 0)
+baseball
+
+# 6. Add a new column batting average called BA. Batting average is computed by the number of hits (H) divided by the number of at bats (AB). Store the result in baseball.
+baseball <- baseball %>%
+  mutate(BA = H / AB)
+baseball
+
+# 7. Modify your new BA column so that the value is rounded to three (3) decimal places.
+baseball$BA <- round(baseball$BA, 3)
+
+# 8. On-base percentage (OBP) is arguably a better statistic than batting average. Create a column called OBP that computes this stat as (H + BB) / (AB + BB). Store the result in baseball.
+baseball$OBP <- (baseball$H + baseball$BB) / (baseball$AB + baseball$BB)
+
+# 9. Modify your new OBP column so that the value is rounded to three (3) decimal places.
+baseball$OBP <- round(baseball$OBP, 3)
+
+# 10. Determine the 10 players who struck out the most this season. Store these results as strikeout_artist.
+strikeout_artist <- head(baseball[order(-baseball$SO), ], 10)
+strikeout_artist
+
+# 11. Using a scatterplot (geom_point), plot the number of home runs (HRs) (the x-axis), versus the number of RBIs (the y-axis) per player.
+library(ggplot2)
+
+# 找到前6名球员
+top_players <- baseball %>%
+  arrange(desc(HR), desc(RBI)) %>%
+  head(6)
+
+# 创建散点图，只标识前6名球员的标签
+ggplot(baseball, aes(x = HR, y = RBI, label = paste(Last, First))) +
+  geom_point() +
+  geom_text(data = top_players, aes(label = paste(Last, First)), vjust = -0.5, hjust = 1) +
+  labs(x = "Number of Home Runs (HRs)", y = "Number of RBIs") +
+  ggtitle("Scatterplot of HRs vs. RBIs")
+
+
+# 12. To be eligible for end-of-season awards, a player must have either at least 300 at bats or appear in at least 100 games. Keep only the players who are eligible to be considered and store them in a variable called eligible_df.
+eligible_df <- baseball %>%
+  filter(AB >= 300 | G >= 100)
+head(eligible_df)
+
+# 13. For eligible players, create a histogram of batting average. Use a binwidth of .025 in your graph. The graph should be drawn in blue and filled in green.
+histogram_plot <- ggplot(eligible_df, aes(x = BA)) +
+  geom_histogram(binwidth = 0.025, fill = "green", color = "blue") +
+  labs(title = "Histogram of Batting Average",
+       x = "Batting Average (BA)",
+       y = "Frequency")
+print(histogram_plot)
+
+# 找出打击平均（BA）最高的前五名球员
+top_players <- eligible_df %>%
+  arrange(desc(BA)) %>%
+  head(5)
+
+# 显示前五名球员的姓名和打击平均
+top_players <- top_players %>%
+  select(Last, First, BA)
+
+print(top_players)
+#       Last First    BA
+#1     Boggs  Wade 0.357
+#2 Mattingly   Don 0.352
+#3    Brooks Hubie 0.340
+#4    Raines   Tim 0.334
+#5       Sax Steve 0.332
+
+# 14. Create ranking columns for HR, RBI, and OBP.
+eligible_df <- eligible_df %>%
+  mutate(RankHR = rank(-1 * HR, ties.method = "min"),
+         RankRBI = rank(-1 * RBI, ties.method = "min"),
+         RankOBP = rank(-1 * OBP, ties.method = "min"))
+
+# 15. Create a TotalRank column as the sum of the previous three ranks.
+eligible_df <- eligible_df %>%
+  mutate(TotalRank = RankHR + RankRBI + RankOBP)
+    
+# 16. Create a TotalRank column that is the sum of the prior three (3) ranks. If a player was ranked first in HR, RBI, and OBP, then their total rank would be 3. Store the result in eligible_df.
+eligible_df <- eligible_df %>%
+  mutate(TotalRank = RankHR + RankRBI + RankOBP)
+colnames(eligible_df)
+eligible_df 
+
+# 17. Arrange the data in ascending order by TotalRank and store the twenty (20) lowest TotalRank scores in a variable called mvp_candidates.
+mvp_candidates <- eligible_df %>%
+  arrange(TotalRank) %>%
+  head(20)
+mvp_candidates
+
+# 18. Create a variable called mvp_candidates_abbreviated with the First, Last, RankHR, RankRBI, and RankOBP selected from mvp_candidates.
+mvp_candidates_abbreviated <- mvp_candidates %>%
+  select(First, Last, RankHR, RankRBI, RankOBP)
+mvp_candidates_abbreviated
+
+
+
+
+
+
+
+
+
+
