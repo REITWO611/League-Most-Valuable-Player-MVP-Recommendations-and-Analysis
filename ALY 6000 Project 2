@@ -7,7 +7,7 @@ options(scipen = 100) # disables scientific notion for entire R session
 
 library(pacman)
 p_load(tidyverse)
-
+ 
 ##### Assignment Part 1 #####
 
 # 1. 2015.csv file is in my working directory and test if we've loaded it correctly.
