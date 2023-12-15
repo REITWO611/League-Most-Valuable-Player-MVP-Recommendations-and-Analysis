@@ -5,9 +5,9 @@ cat("\014") # clears console
 rm(list = ls()) # clears global environment try(dev.off(dev.list()["RStudioGD"]), silent = TRUE) # clears plots try(p_unload(p_loaded(), character.only = TRUE), silent = TRUE) # clears packages
 options(scipen = 100) # disables scientific notion for entire R session
 
-library(pacman)
+library(pacman) 
 p_load(tidyverse)
- 
+  
 ##### Assignment Part 1 #####
 
 # 1. 2015.csv file is in my working directory and test if we've loaded it correctly.
